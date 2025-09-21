@@ -20,7 +20,7 @@ const Stack = createStackNavigator();
 // Bible Stack Navigator
 function BibleStack() {
   return (
-    <Stack.Navigator>
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen 
         name="BookList" 
         component={BookListScreen} 

@@ -8,25 +8,22 @@ import {
   ActivityIndicator,
   Alert,
   Animated,
-  Dimensions,
+  useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { bibleDB } from '../db/bible';
-import { Book } from '../db/bible';
-import { getTestamentName } from '../utils/verseUtils';
-
-const { width } = Dimensions.get('window');
+import PagerView from 'react-native-pager-view';
+import { bibleDB, Book } from '../db/bible';
 
 export default function BookListScreen({ navigation }: any) {
   const [oldTestamentBooks, setOldTestamentBooks] = useState<Book[]>([]);
   const [newTestamentBooks, setNewTestamentBooks] = useState<Book[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'old' | 'new'>('old');
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(30)).current;
-  const tabIndicatorAnim = useRef(new Animated.Value(0)).current;
+  const [activeTab, setActiveTab] = useState(0);
+  const pagerRef = useRef<PagerView>(null);
+  const scrollX = useRef(new Animated.Value(0)).current;
+  const { width } = useWindowDimensions();
 
   useEffect(() => {
     loadBooks();
@@ -39,23 +36,8 @@ export default function BookListScreen({ navigation }: any) {
         bibleDB.getBooksByTestament('old'),
         bibleDB.getBooksByTestament('new'),
       ]);
-      
       setOldTestamentBooks(oldBooks);
       setNewTestamentBooks(newBooks);
-
-      // Animate content appearance
-      Animated.parallel([
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 600,
-          useNativeDriver: true,
-        }),
-        Animated.timing(slideAnim, {
-          toValue: 0,
-          duration: 500,
-          useNativeDriver: true,
-        }),
-      ]).start();
     } catch (error) {
       console.error('Failed to load books:', error);
       Alert.alert('Error', 'Failed to load Bible books');
@@ -68,156 +50,27 @@ export default function BookListScreen({ navigation }: any) {
     navigation.navigate('ChapterList', { book });
   };
 
-  const handleTabSwitch = (tab: 'old' | 'new') => {
-    setActiveTab(tab);
-    Animated.timing(tabIndicatorAnim, {
-      toValue: tab === 'old' ? 0 : 1,
-      duration: 300,
-      useNativeDriver: true,
-    }).start();
-  };
-
-  const renderBookItem = ({ item, index }: { item: Book; index: number }) => (
-    <Animated.View
-      style={{
-        opacity: fadeAnim,
-        transform: [
-          { translateY: slideAnim },
-          { scale: fadeAnim.interpolate({ inputRange: [0, 1], outputRange: [0.9, 1] }) }
-        ]
-      }}
+  const renderBookItem = ({ item }: { item: Book }) => (
+    <TouchableOpacity
+      style={styles.bookItem}
+      onPress={() => handleBookPress(item)}
+      activeOpacity={0.7}
     >
-      <TouchableOpacity
-        style={styles.bookItem}
-        onPress={() => handleBookPress(item)}
-        activeOpacity={0.8}
-      >
-        <LinearGradient
-          colors={['rgba(255,255,255,0.95)', 'rgba(255,255,255,0.85)']}
-          style={styles.bookItemGradient}
-        >
-          <View style={styles.bookItemContent}>
-            <View style={styles.bookIconContainer}>
-              <Ionicons 
-                name="book" 
-                size={24} 
-                color={item.testament === 'old' ? '#e74c3c' : '#3498db'} 
-              />
-            </View>
-            <View style={styles.bookTextContainer}>
-              <Text style={styles.bookName}>{item.name}</Text>
-              <Text style={styles.chapterCount}>{item.chapter_count} chapters</Text>
-            </View>
-          </View>
-        </LinearGradient>
-      </TouchableOpacity>
-    </Animated.View>
+      <Ionicons
+        name="book-outline"
+        size={22}
+        color={item.testament === 'old' ? '#e74c3c' : '#3498db'}
+      />
+      <View style={styles.bookTextContainer}>
+        <Text style={styles.bookName}>{item.name}</Text>
+        <Text style={styles.chapterCount}>{item.chapter_count} chapters</Text>
+      </View>
+    </TouchableOpacity>
   );
-
-  const renderTabBar = () => (
-    <Animated.View 
-      style={[
-        styles.tabBar,
-        {
-          opacity: fadeAnim,
-          transform: [{ translateY: slideAnim }]
-        }
-      ]}
-    >
-      <LinearGradient
-        colors={['rgba(255,255,255,0.95)', 'rgba(255,255,255,0.85)']}
-        style={styles.tabBarGradient}
-      >
-        <TouchableOpacity
-          style={styles.tabButton}
-          onPress={() => handleTabSwitch('old')}
-          activeOpacity={0.8}
-        >
-          <View style={styles.tabContent}>
-            <Ionicons 
-              name="library" 
-              size={20} 
-              color={activeTab === 'old' ? '#e74c3c' : '#666'} 
-            />
-            <Text style={[
-              styles.tabText,
-              { color: activeTab === 'old' ? '#e74c3c' : '#666' }
-            ]}>
-              Old Testament
-            </Text>
-            <Text style={[
-              styles.tabCount,
-              { color: activeTab === 'old' ? '#e74c3c' : '#999' }
-            ]}>
-              {oldTestamentBooks.length}
-            </Text>
-          </View>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.tabButton}
-          onPress={() => handleTabSwitch('new')}
-          activeOpacity={0.8}
-        >
-          <View style={styles.tabContent}>
-            <Ionicons 
-              name="library-outline" 
-              size={20} 
-              color={activeTab === 'new' ? '#3498db' : '#666'} 
-            />
-            <Text style={[
-              styles.tabText,
-              { color: activeTab === 'new' ? '#3498db' : '#666' }
-            ]}>
-              New Testament
-            </Text>
-            <Text style={[
-              styles.tabCount,
-              { color: activeTab === 'new' ? '#3498db' : '#999' }
-            ]}>
-              {newTestamentBooks.length}
-            </Text>
-          </View>
-        </TouchableOpacity>
-      </LinearGradient>
-    </Animated.View>
-  );
-
-  const renderBooksList = () => {
-    const books = activeTab === 'old' ? oldTestamentBooks : newTestamentBooks;
-    const testament = activeTab === 'old' ? 'old' : 'new';
-    
-    return (
-      <Animated.View 
-        style={[
-          styles.booksContainer,
-          {
-            opacity: fadeAnim,
-            transform: [{ translateY: slideAnim }]
-          }
-        ]}
-      >
-        <FlatList
-          data={books}
-          renderItem={renderBookItem}
-          keyExtractor={(item) => item.id.toString()}
-          contentContainerStyle={styles.booksList}
-          showsVerticalScrollIndicator={false}
-          numColumns={2}
-          columnWrapperStyle={styles.bookRow}
-        />
-      </Animated.View>
-    );
-  };
 
   if (loading) {
     return (
-      <LinearGradient
-        colors={['#667eea', '#764ba2']}
-        style={styles.container}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-      >
+      <LinearGradient colors={['#667eea', '#764ba2']} style={styles.container}>
         <SafeAreaView style={styles.container}>
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color="#FFFFFF" />
@@ -228,147 +81,119 @@ export default function BookListScreen({ navigation }: any) {
     );
   }
 
+  // Animate indicator
+  const translateX = scrollX.interpolate({
+    inputRange: [0, width],
+    outputRange: [0, width / 2],
+  });
+
   return (
     <LinearGradient
       colors={['#667eea', '#764ba2', '#f093fb']}
       style={styles.container}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
     >
       <SafeAreaView style={styles.container}>
-        <Animated.View 
-          style={[
-            styles.header,
-            {
-              opacity: fadeAnim,
-              transform: [{ translateY: slideAnim }]
-            }
-          ]}
+        {/* Material Top Tabs */}
+        <View style={styles.topTabs}>
+          {['Old Testament', 'New Testament'].map((label, index) => (
+            <TouchableOpacity
+              key={label}
+              style={styles.tabButton}
+              activeOpacity={0.7}
+              onPress={() => {
+                setActiveTab(index);
+                pagerRef.current?.setPage(index);
+              }}
+            >
+              <Text
+                style={[
+                  styles.tabText,
+                  activeTab === index && styles.activeTabText,
+                ]}
+              >
+                {label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+
+          {/* Indicator */}
+          <Animated.View
+            style={[
+              styles.indicator,
+              { transform: [{ translateX }], width: width / 2 },
+            ]}
+          />
+        </View>
+
+        {/* Pager */}
+        <PagerView
+          ref={pagerRef}
+          style={{ flex: 1 }}
+          initialPage={0}
+          onPageScroll={(e) => {
+            const { offset, position } = e.nativeEvent;
+            scrollX.setValue((position + offset) * width);
+          }}
+          onPageSelected={(e) => setActiveTab(e.nativeEvent.position)}
         >
-          <Text style={styles.title}>Bible Books</Text>
-          <Text style={styles.subtitle}>Choose a book to read</Text>
-        </Animated.View>
-        
-        {renderTabBar()}
-        {renderBooksList()}
+          <View key="0">
+            <FlatList
+              data={oldTestamentBooks}
+              renderItem={renderBookItem}
+              keyExtractor={(item) => item.id.toString()}
+              contentContainerStyle={styles.booksList}
+              showsVerticalScrollIndicator={false}
+            />
+          </View>
+          <View key="1">
+            <FlatList
+              data={newTestamentBooks}
+              renderItem={renderBookItem}
+              keyExtractor={(item) => item.id.toString()}
+              contentContainerStyle={styles.booksList}
+              showsVerticalScrollIndicator={false}
+            />
+          </View>
+        </PagerView>
       </SafeAreaView>
     </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    marginTop: 15,
-    fontSize: 16,
-    color: '#FFFFFF',
-    fontWeight: '500',
-  },
-  header: {
-    padding: 20,
-    paddingBottom: 10,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    textShadowColor: 'rgba(0, 0, 0, 0.3)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 4,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: 'rgba(255, 255, 255, 0.8)',
-    marginTop: 5,
-    fontWeight: '500',
-  },
-  tabBar: {
-    marginHorizontal: 20,
-    marginBottom: 20,
-    borderRadius: 16,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 6,
-  },
-  tabBarGradient: {
-    flexDirection: 'row',
-  },
-  tabButton: {
-    flex: 1,
-    padding: 16,
-  },
-  tabContent: {
-    alignItems: 'center',
-    gap: 4,
-  },
-  tabText: {
-    fontSize: 14,
-    fontWeight: '700',
-    textAlign: 'center',
-  },
-  tabCount: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  booksContainer: {
-    flex: 1,
-    paddingHorizontal: 20,
-  },
-  booksList: {
-    paddingBottom: 20,
-  },
-  bookRow: {
-    justifyContent: 'space-between',
-  },
+  container: { flex: 1 },
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  loadingText: { marginTop: 15, fontSize: 16, color: '#FFFFFF', fontWeight: '500' },
+  booksList: { paddingHorizontal: 20, paddingBottom: 20 },
   bookItem: {
-    width: (width - 60) / 2,
-    marginBottom: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.9)',
     borderRadius: 12,
-    overflow: 'hidden',
+    padding: 14,
+    marginBottom: 10,
   },
-  bookItemGradient: {
-    padding: 16,
-    minHeight: 100,
+  bookTextContainer: { marginLeft: 12 },
+  bookName: { fontSize: 16, fontWeight: '600', color: '#333' },
+  chapterCount: { fontSize: 13, color: '#666', marginTop: 2 },
+
+  // Material Top Tabs
+  topTabs: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(255,255,255,0.95)',
+    borderBottomWidth: 1,
+    borderColor: 'rgba(0,0,0,0.1)',
+    height: 48,
+    position: 'relative',
   },
-  bookItemContent: {
-    alignItems: 'center',
-    gap: 8,
-  },
-  bookIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(102, 126, 234, 0.1)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  bookTextContainer: {
-    alignItems: 'center',
-  },
-  bookName: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#333',
-    marginBottom: 4,
-    textAlign: 'center',
-  },
-  chapterCount: {
-    fontSize: 12,
-    color: '#666',
-    fontWeight: '500',
-    textAlign: 'center',
+  tabButton: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  tabText: { fontSize: 14, color: '#555', fontWeight: '500' },
+  activeTabText: { color: '#667eea', fontWeight: '700' },
+  indicator: {
+    position: 'absolute',
+    bottom: 0,
+    height: 3,
+    backgroundColor: '#667eea',
+    borderRadius: 1.5,
   },
 });
