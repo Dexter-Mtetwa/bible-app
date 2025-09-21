@@ -81,7 +81,17 @@ export default function BookListScreen({ navigation }: any) {
     );
   }
 
-  // Animate indicator
+  // Animate tab text color
+  const tabTextColors = ['Old', 'New'].map((_, index) =>
+    scrollX.interpolate({
+      inputRange: [0, width],
+      outputRange:
+        index === 0 ? ['#667eea', '#555'] : ['#555', '#667eea'],
+      extrapolate: 'clamp',
+    })
+  );
+
+  // Animate indicator position
   const translateX = scrollX.interpolate({
     inputRange: [0, width],
     outputRange: [0, width / 2],
@@ -105,14 +115,15 @@ export default function BookListScreen({ navigation }: any) {
                 pagerRef.current?.setPage(index);
               }}
             >
-              <Text
+              <Animated.Text
                 style={[
                   styles.tabText,
+                  { color: tabTextColors[index] },
                   activeTab === index && styles.activeTabText,
                 ]}
               >
                 {label}
-              </Text>
+              </Animated.Text>
             </TouchableOpacity>
           ))}
 
@@ -182,18 +193,28 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     backgroundColor: 'rgba(255,255,255,0.95)',
     borderBottomWidth: 1,
-    borderColor: 'rgba(0,0,0,0.1)',
+    borderColor: 'rgba(0,0,0,0.05)',
     height: 48,
     position: 'relative',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 3,
   },
   tabButton: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   tabText: { fontSize: 14, color: '#555', fontWeight: '500' },
-  activeTabText: { color: '#667eea', fontWeight: '700' },
+  activeTabText: { fontWeight: '700' },
   indicator: {
     position: 'absolute',
     bottom: 0,
     height: 3,
     backgroundColor: '#667eea',
     borderRadius: 1.5,
+    shadowColor: '#667eea',
+    shadowOpacity: 0.2,
+    shadowOffset: { width: 0, height: 1 },
+    shadowRadius: 2,
+    elevation: 2,
   },
 });
