@@ -189,7 +189,7 @@ export default function BookListScreen({ navigation }: any) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f5f5f5' },
+  container: { flex: 1, backgroundColor: '#f5f5f5', paddingTop: 30 },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#f5f5f5' },
   loadingText: { marginTop: 15, fontSize: 16, color: '#667eea', fontWeight: '500' },
 
@@ -215,7 +215,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     backgroundColor: '#ffffff',
     borderTopWidth: 1,
+    marginBottom: 5,
     borderColor: '#e0e0e0',
+    borderRadius: 20,
     position: 'absolute',
     bottom: 0,
     left: 0,

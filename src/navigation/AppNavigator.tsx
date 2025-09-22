@@ -74,7 +74,7 @@ function MainTabs() {
           borderTopWidth: 0,
           elevation: 0,
           shadowOpacity: 0,
-          height: 90,
+          height: 75,
           paddingBottom: 20,
           paddingTop: 10,
         },
